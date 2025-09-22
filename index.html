@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Plaza-wise Overdue Comparison Tool for account management">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Plaza-wise Overdue Comparison</title>
+  <link rel="icon" href="images/developer.png" type="image/png">
+
+  <!-- ✅ Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+Bengali:wght@400;500;600;700&display=swap" rel="stylesheet">
+  
+  <!-- Material Icons -->
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+
+  <!-- SheetJS -->
+  <script src="libs/xlsx.full.min.js"></script>
+
+  <!-- html2canvas (for screenshot) -->
+  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+  
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+
+
+
+  <style>
+    :root {
+      --primary: #4361ee;
+      --primary-light: #4895ef;
+      --secondary: #3f37c9;
+      --danger: #ef476f;
+      --success: #06d6a0;
+      --warning: #ffd166;
+      --bg: #f8f9fa;
+      --text: #2b2d42;
+      --text-light: #6c757d;
+      --border-radius: 12px;
+      --shadow: 0 10px 25px rgba(0,0,0,0.1);
+      --transition: all 0.3s ease;
+    }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      font-family: 'Inter', 'Noto Sans Bengali', Arial, sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      min-height: 100vh;
+      padding: 20px;
+      color: var(--text);
+    }
+
+    .container {
+      background: white;
+      width: 100%;
+      max-width: 1000px;
+      border-radius: var(--border-radius);
+      padding: 30px;
+      box-shadow: var(--shadow);
+      position: relative;
+      overflow: hidden;
+    }
+    
+    /* Login Section */
+    .auth-container {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.8);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 1000;
+    }
+    
+    .auth-box {
+      background: white;
+      padding: 40px;
+      border-radius: var(--border-radius);
+      width: 90%;
+      max-width: 400px;
+      text-align: center;
+      box-shadow: var(--shadow);
+    }
+    
+    .auth-box h2 {
+      margin-top: 0;
+      color: var(--primary);
+      font-size: 24px;
+      margin-bottom: 20px;
+    }
+    
+    .auth-box p {
+      margin-bottom: 25px;
+      color: var(--text-light);
+    }
+    
+    .google-btn {
+      background: white;
+      color: var(--text);
+      border: 1px solid #ddd;
+      padding: 12px 24px;
+      border-radius: 50px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      cursor: pointer;
+      font-weight: 500;
+      transition: var(--transition);
+      margin: 0 auto;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+    
+    .google-btn:hover {
+      background: #f1f3f4;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    }
+    
+    .google-btn img {
+      width: 20px;
+      height: 20px;
+    }
+    
+    /* User Profile */
+    .user-profile {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      position: absolute;
+      top: 20px;
+      right: 30px;
+    }
+    
+    .user-avatar {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 2px solid var(--primary-light);
+    }
+    
+    .user-name {
+      font-weight: 500;
+      font-size: 14px;
+    }
+    
+    .logout-btn {
+      background: transparent;
+      border: none;
+      color: var(--text-light);
+      cursor: pointer;
+      font-size: 12px;
+      padding: 0;
+      text-decoration: underline;
+    }
+
+    h1 {
+      font-size: 28px;
+      font-weight: 700;
+      color: var(--primary);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 25px;
+      position: relative;
+    }
+    
+    h1::after {
+      content: '';
+      position: absolute;
+      bottom: -10px;
+      left: 0;
+      width: 60px;
+      height: 4px;
+      background: var(--primary-light);
+      border-radius: 2px;
+    }
+
+    .notice {
+      background: #e6f2ff;
+      border-left: 4px solid var(--primary);
+      padding: 16px 20px;
+      border-radius: var(--border-radius);
+      margin: 25px 0;
+      color: var(--secondary);
+      font-size: 15px;
+      line-height: 1.6;
+      font-family: 'Noto Sans Bengali', sans-serif;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+    }
+
+    .notification {
+      display: none;
+      margin-top: 15px;
+      padding: 14px 18px;
+      border-radius: var(--border-radius);
+      font-size: 14px;
+      font-weight: 500;
+      animation: fadeIn 0.3s ease;
+    }
+    .notification.error { background: #ffe3e3; color: #cf1124; }
+    .notification.success { background: #e3fcef; color: #0c6b58; }
+    
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(-10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .dropzone {
+      margin: 20px 0;
+      padding: 25px;
+      border: 2px dashed var(--primary-light);
+      border-radius: var(--border-radius);
+      text-align: center;
+      background: #f8faff;
+      color: var(--text-light);
+      cursor: pointer;
+      transition: var(--transition);
+      box-shadow: 0 2px 10px rgba(0,0,0,0.03);
+    }
+    .dropzone.dragover {
+      background: #eef6ff;
+      border-color: var(--primary);
+      color: var(--primary);
+      transform: translateY(-2px);
+      box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+    }
+    .dropzone p {
+      margin: 0;
+      font-size: 15px;
+    }
+    .file-name { 
+      margin-top: 10px; 
+      font-size: 13px; 
+      color: var(--text-light); 
+      font-style: italic; 
+    }
+
+    .btn-row {
+      margin-top: 30px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 15px;
+    }
+    button {
+      flex: 1;
+      border: none;
+      padding: 14px 18px;
+      border-radius: var(--border-radius);
+      font-weight: 600;
+      font-size: 15px;
+      cursor: pointer;
+      transition: var(--transition);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    }
+    button:hover { 
+      transform: translateY(-3px); 
+      box-shadow: 0 6px 15px rgba(0,0,0,0.15); 
+    }
+    button:active {
+      transform: translateY(0);
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+    #compareBtn { background: var(--success); color: white; }
+    #downloadBtn { background: var(--warning); color: #2b2d42; }
+    #downloadAccountsBtn { background: var(--secondary); color: white; }
+    #screenshotBtn { background: #06b6d4; color: white; }
+    #clearBtn { background: var(--danger); color: white; }
+
+    table {
+      width: 100%;
+      border-collapse: separate;
+      border-spacing: 0;
+      margin-top: 30px;
+      border-radius: var(--border-radius);
+      overflow: hidden;
+      font-size: 14px;
+      box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+    }
+    th {
+      background: var(--primary);
+      color: white;
+      padding: 15px;
+      cursor: pointer;
+      font-weight: 600;
+      position: relative;
+      transition: var(--transition);
+    }
+    th:hover {
+      background: var(--primary-light);
+    }
+    th::after {
+      content: '⬍';
+      font-size: 12px;
+      margin-left: 5px;
+      opacity: 0.7;
+    }
+    td {
+      padding: 12px 15px;
+      text-align: center;
+      border-bottom: 1px solid #edf2f7;
+      color: var(--text);
+    }
+    tr:last-child td {
+      border-bottom: none;
+    }
+    tr:nth-child(even) { background: #f8fafc; }
+    tr:hover td { background: #edf2f7; }
+    .increase { color: var(--danger); font-weight: 600; }
+    .decrease { color: var(--success); font-weight: 600; }
+    .neutral { color: var(--text-light); }
+
+    #loading {
+      display: none;
+      text-align: center;
+      margin-top: 30px;
+    }
+    .spinner {
+      margin: 0 auto 15px;
+      border: 4px solid #e5e7eb;
+      border-top: 4px solid var(--primary);
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      animation: spin 1s linear infinite;
+      box-shadow: 0 0 10px rgba(0,0,0,0.05);
+    }
+    @keyframes spin { 0%{transform:rotate(0)}100%{transform:rotate(360deg)} }
+
+    .credit {
+      margin-top: 50px;
+      text-align: center;
+      font-size: 14px;
+      color: var(--text-light);
+      padding-top: 20px;
+      border-top: 1px solid #edf2f7;
+    }
+
+    .credit img.dev-photo {
+      width: 100px;
+      height: 100px;
+      object-fit: cover;
+      border-radius: 50%;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+      margin-top: 15px;
+      transition: var(--transition);
+    }
+    
+    .credit img.dev-photo:hover {
+      transform: scale(1.05);
+      box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+    }
+
+    @media(max-width:600px){
+      button { flex: 100%; }
+    }
+  </style>
+</head>
+<body>
+  <!-- Login Container -->
+  <div class="auth-container" id="loginContainer">
+    <div class="auth-box">
+      <h2>Welcome to Overdue Comparison</h2>
+      <p>Please sign in to access the dashboard</p>
+      <button class="google-btn" id="googleSignInBtn">
+        <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google logo">
+        Sign in with Google
+      </button>
+    </div>
+  </div>
+  
+  <div class="container">
+    <!-- User Profile (Hidden until logged in) -->
+    <div class="user-profile" id="userProfile" style="display: none;">
+      <img src="" alt="User" class="user-avatar" id="userAvatar">
+      <div>
+        <div class="user-name" id="userName"></div>
+        <button class="logout-btn" id="logoutBtn">Sign Out</button>
+      </div>
+    </div>
+    
+    <h1><i class="material-icons">dashboard</i> Overdue Comparison Dashboard</h1>
+
+    <div class="notice">
+      ⚠️ <b>গুরুত্বপূর্ণ:</b> সব হিসাব আপনার কম্পিউটারেই প্রক্রিয়া হয়, ডেটা ইন্টারনেটে যায় না। নিরাপদে থাকুন।
+    </div>
+
+    <div class="notification" id="notificationBox"></div>
+
+    <!-- Drag & Drop Inputs -->
+    <div class="dropzone" id="dropMaster">
+      <p><i class="material-icons">cloud_upload</i> Drop <b>Collectible Overdue File</b> here or click to upload</p>
+      <input type="file" id="masterFile" accept=".xls,.xlsx" hidden>
+      <div class="file-name" id="masterFileName">No file chosen...</div>
+    </div>
+
+    <div class="dropzone" id="dropDaily">
+      <p><i class="material-icons">cloud_upload</i> Drop <b>Running Overdue File</b> here or click to upload</p>
+      <input type="file" id="dailyFile" accept=".xls,.xlsx" hidden>
+      <div class="file-name" id="dailyFileName">No file chosen...</div>
+    </div>
+
+    <!-- Action Buttons -->
+    <div class="btn-row">
+      <button id="compareBtn"><i class="material-icons">compare_arrows</i> Compare</button>
+      <button id="downloadBtn"><i class="material-icons">file_download</i> Export XLSX</button>
+      <button id="screenshotBtn"><i class="material-icons">photo_camera</i> Screenshot</button>
+      <button id="clearBtn"><i class="material-icons">delete_sweep</i> Clear</button>
+    </div>
+
+    <!-- Spinner -->
+    <div id="loading">
+      <div class="spinner"></div>
+      <p>Processing files... Please wait 🚀</p>
+    </div>
+
+    <!-- Results -->
+    <div id="result"></div>
+
+    <!-- Credit Section -->
+    <div class="credit">
+      <p><b>Developed & Maintained by:</b></p>
+      <img src="images/developer.png" alt="Developer Photo" class="dev-photo">
+      <p>© 2025 Overdue Comparison App</p>
+    </div>
+  </div>
+
+
+  <!-- Main Script -->
+  <script src="script.js"></script>
+</body>
+</html>
